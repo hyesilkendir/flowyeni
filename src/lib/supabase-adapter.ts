@@ -48,20 +48,28 @@ export class SupabaseAdapter {
   }
 
   async createUser(userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
-    const { data, error } = await supabase
-      .from('users')
-      .insert({
-        email: userData.email,
-        password: userData.password,
-        name: userData.name,
-        username: userData.username,
-        role: userData.role || 'user',
-        company_name: userData.companyName,
-      })
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .insert({
+          email: userData.email,
+          password: userData.password,
+          name: userData.name,
+          username: userData.username,
+          role: userData.role || 'user',
+          company_name: userData.companyName,
+        })
+        .select()
+        .single();
 
-    if (error) throw new Error(error.message);
+      if (error) {
+        console.error('Supabase createUser error:', error);
+        throw new Error(`Kayıt hatası: ${error.message}`);
+      }
+
+      if (!data) {
+        throw new Error('Kullanıcı oluşturulamadı');
+      }
 
     return {
       id: data.id,
