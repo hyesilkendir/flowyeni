@@ -3,9 +3,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { useAppStore } from '@/lib/kv-store';
+import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+import { Button } from '../ui/button';
+import { useAppStore } from '../../lib/kv-store';
 import {
   LayoutDashboard,
   Users,
