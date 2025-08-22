@@ -1,15 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { AuthLayout } from '@/components/layout/auth-layout';
-import { useAppStore } from '@/lib/kv-store';
-import type { RegularPayment } from '@/lib/database-schema';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AuthLayout } from '../../components/layout/auth-layout';
+import { useAppStore } from '../../lib/kv-store';
+import type { RegularPayment } from '../../lib/database-schema';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Edit, Plus, Trash2 } from 'lucide-react';

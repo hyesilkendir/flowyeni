@@ -3,16 +3,16 @@
 import React from 'react';
 import { useState } from 'react';
 import { Plus, Search, Calendar, AlertTriangle, CheckCircle, Clock, Edit, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { useAppStore } from '@/lib/kv-store';
-import { AuthLayout } from '@/components/layout/auth-layout';
-import type { Debt } from '@/lib/database-schema';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Input } from '../../components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Label } from '../../components/ui/label';
+import { Badge } from '../../components/ui/badge';
+import { useAppStore } from '../../lib/kv-store';
+import { AuthLayout } from '../../components/layout/auth-layout';
+import type { Debt } from '../../lib/database-schema';
 import { format, isPast, differenceInDays } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
