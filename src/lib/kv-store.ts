@@ -197,7 +197,11 @@ export const useAppStore = create<AppState>()(
           return true;
         } catch (err) {
           console.error('Register error:', err);
-          get().setError('Kayıt olurken bir hata oluştu. Kullanıcı adı veya e-posta zaten kullanımda olabilir.');
+          if (err instanceof Error) {
+            get().setError(err.message);
+          } else {
+            get().setError('Kayıt olurken bir hata oluştu. Kullanıcı adı veya e-posta zaten kullanımda olabilir.');
+          }
           return false;
         } finally {
           get().setLoading(false);

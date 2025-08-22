@@ -64,6 +64,16 @@ export class SupabaseAdapter {
 
       if (error) {
         console.error('Supabase createUser error:', error);
+        
+        // Kullanıcı dostu hata mesajları
+        if (error.code === '23505') {
+          if (error.message.includes('email')) {
+            throw new Error('Bu e-posta adresi zaten kullanımda. Lütfen farklı bir e-posta adresi deneyin.');
+          } else if (error.message.includes('username')) {
+            throw new Error('Bu kullanıcı adı zaten kullanımda. Lütfen farklı bir kullanıcı adı deneyin.');
+          }
+        }
+        
         throw new Error(`Kayıt hatası: ${error.message}`);
       }
 
