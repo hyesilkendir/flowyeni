@@ -1,0 +1,441 @@
+'use client';
+
+import { useState, useMemo } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { AuthLayout } from '@/components/layout/auth-layout';
+import { useAppStore } from '@/lib/kv-store';
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  Filter,
+  DollarSign,
+  Activity,
+  Edit,
+  Trash2,
+  Plus,
+  Search,
+  ArrowLeft,
+  Download,
+  Upload
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { tr } from 'date-fns/locale';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+export default function CashAccountDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const accountId = params.id as string;
+  
+  const { 
+    cashAccounts, 
+    currencies, 
+    transactions,
+    clients,
+    categories,
+    showAmounts,
+    deleteTransaction
+  } = useAppStore();
+
+  const [filterPeriod, setFilterPeriod] = useState('all');
+
+  // Kasa hesabını bul
+  const account = cashAccounts.find(ca => ca.id === accountId);
+
+  const isDefault = account?.isDefault ?? false;
+
+  // Bu kasaya ait işlemleri bul
+  const accountTransactions = useMemo(() => {
+    if (!account) return [];
+
+    let filtered = transactions.filter(t => 
+      t.cashAccountId === accountId || 
+      (!t.cashAccountId && account.isDefault)
+    );
+
+    // Tarih filtresi
+    if (filterPeriod !== 'all') {
+      const now = new Date();
+      const periodDays = parseInt(filterPeriod);
+      const periodStart = new Date(now.getTime() - (periodDays * 24 * 60 * 60 * 1000));
+      filtered = filtered.filter(t => {
+        const transactionDate = new Date(t.transactionDate);
+        return !isNaN(transactionDate.getTime()) && transactionDate >= periodStart;
+      });
+    }
+
+    return filtered.sort((a, b) => {
+      const dateA = new Date(a.transactionDate);
+      const dateB = new Date(b.transactionDate);
+      return dateB.getTime() - dateA.getTime();
+    });
+  }, [transactions, accountId, isDefault, filterPeriod]);
+
+  const balance = account?.balance ?? 0;
+
+  // Kasa bakiye hesaplama
+  const currentBalance = useMemo(() => {
+    return accountTransactions.reduce((balance, transaction) => {
+      return transaction.type === 'income' 
+        ? balance + transaction.amount 
+        : balance - transaction.amount;
+    }, balance);
+  }, [accountTransactions, balance]);
+
+  // İstatistikler
+  const stats = useMemo(() => {
+    const income = accountTransactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    const expense = accountTransactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    return {
+      totalIncome: income,
+      totalExpense: expense,
+      netFlow: income - expense,
+      transactionCount: accountTransactions.length
+    };
+  }, [accountTransactions]);
+
+  // Grafik verisi - son 30 günlük akış
+  const chartData = useMemo(() => {
+    const last30Days = Array.from({ length: 30 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (29 - i));
+      return date;
+    });
+
+    return last30Days.map(date => {
+      const dayTransactions = accountTransactions.filter(t => {
+        const transactionDate = new Date(t.transactionDate);
+        return !isNaN(transactionDate.getTime()) && 
+               transactionDate.toDateString() === date.toDateString();
+      });
+      
+      const income = dayTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      const expense = dayTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      return {
+        date: format(date, 'dd/MM', { locale: tr }),
+        income,
+        expense,
+        net: income - expense
+      };
+    });
+  }, [accountTransactions]);
+
+  if (!account) {
+    return (
+      <AuthLayout>
+        <div className="text-center py-8">
+          <h1 className="text-2xl font-bold mb-4">Kasa Bulunamadı</h1>
+          <Button onClick={() => router.push('/cash-accounts')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Geri Dön
+          </Button>
+        </div>
+      </AuthLayout>
+    );
+  }
+
+  const currency = currencies.find(c => c.id === account.currencyId);
+  
+  const formatCurrency = (amount: number) => {
+    const value = showAmounts ? amount.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) : '***.**';
+    return `${currency?.symbol || 'TL'} ${value}`;
+  };
+
+  const handleDeleteTransaction = (transactionId: string) => {
+    if (confirm('Bu işlemi silmek istediğinizden emin misiniz?')) {
+      deleteTransaction(transactionId);
+    }
+  };
+
+  return (
+    <AuthLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Button variant="outline" onClick={() => router.push('/cash-accounts')}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Geri
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold flex items-center">
+                {/* Wallet icon removed as per new_code */}
+                {account.name}
+                {account.isDefault && (
+                  <Badge variant="secondary" className="ml-3">Ana Kasa</Badge>
+                )}
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                {currency?.name} ({currency?.code}) • {format(account.createdAt, 'dd MMMM yyyy', { locale: tr })} tarihinde oluşturuldu
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* İstatistik Kartları */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Mevcut Bakiye</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {formatCurrency(currentBalance)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Güncel durum
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Toplam Gelir</CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {formatCurrency(stats.totalIncome)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Seçili dönem
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Toplam Gider</CardTitle>
+              <TrendingDown className="h-4 w-4 text-red-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">
+                {formatCurrency(stats.totalExpense)}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Seçili dönem
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">İşlem Sayısı</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {stats.transactionCount}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Toplam hareket
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Grafik */}
+        {showAmounts && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Son 30 Gün Kasa Akışı</CardTitle>
+              <CardDescription>Günlük gelir ve gider hareketleri</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value, name) => [
+                        `${currency?.symbol} ${Number(value).toLocaleString('tr-TR')}`,
+                        name === 'income' ? 'Gelir' : name === 'expense' ? 'Gider' : 'Net'
+                      ]}
+                      labelFormatter={(label) => `Tarih: ${label}`}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="income" 
+                      stroke="#22c55e" 
+                      strokeWidth={2}
+                      name="income"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="expense" 
+                      stroke="#ef4444" 
+                      strokeWidth={2}
+                      name="expense"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="net" 
+                      stroke="#3b82f6" 
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                      name="net"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* İşlem Geçmişi */}
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>Kasa Hareketleri</CardTitle>
+                <CardDescription>Bu kasaya ait tüm gelir ve gider işlemleri</CardDescription>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={filterPeriod} onValueChange={setFilterPeriod}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tüm Zamanlar</SelectItem>
+                    <SelectItem value="7">Son 7 Gün</SelectItem>
+                    <SelectItem value="30">Son 30 Gün</SelectItem>
+                    <SelectItem value="90">Son 3 Ay</SelectItem>
+                    <SelectItem value="180">Son 6 Ay</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {accountTransactions.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tarih</TableHead>
+                    <TableHead>Tür</TableHead>
+                    <TableHead>Açıklama</TableHead>
+                    <TableHead>Kategori</TableHead>
+                    <TableHead>Cari/Personel</TableHead>
+                    <TableHead className="text-right">Tutar</TableHead>
+                    <TableHead>İşlemler</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {accountTransactions.map((transaction) => {
+                    const client = clients.find(c => c.id === transaction.clientId);
+                    const category = categories.find(c => c.id === transaction.categoryId);
+                    
+                    return (
+                      <TableRow key={transaction.id}>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            {/* Clock icon removed as per new_code */}
+                            <span>
+                              {(() => {
+                                const transactionDate = new Date(transaction.transactionDate);
+                                if (isNaN(transactionDate.getTime())) {
+                                  return 'Geçersiz Tarih';
+                                }
+                                return format(transactionDate, 'dd MMM yyyy', { locale: tr });
+                              })()}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={transaction.type === 'income' ? 'default' : 'destructive'}
+                            className={transaction.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
+                          >
+                            {transaction.type === 'income' ? (
+                              <>
+                                <TrendingUp className="h-3 w-3 mr-1" />
+                                Gelir
+                              </>
+                            ) : (
+                              <>
+                                <TrendingDown className="h-3 w-3 mr-1" />
+                                Gider
+                              </>
+                            )}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">{transaction.description}</div>
+                          {transaction.notes && (
+                            <div className="text-sm text-muted-foreground">{transaction.notes}</div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {category?.name || 'Kategori Yok'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {client ? (
+                            <div>
+                              <div className="font-medium">{client.name}</div>
+                              <div className="text-sm text-muted-foreground">{client.email}</div>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          <span className={transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}>
+                            {transaction.type === 'income' ? '+' : '-'}
+                            {formatCurrency(transaction.amount)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteTransaction(transaction.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            ) : (
+              <div className="text-center py-8">
+                <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Henüz hareket yok
+                </h3>
+                <p className="text-gray-500 mb-4">
+                  Bu kasada henüz herhangi bir gelir veya gider işlemi bulunmuyor.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </AuthLayout>
+  );
+}
