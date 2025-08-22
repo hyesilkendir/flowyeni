@@ -1,4 +1,4 @@
-import { useAppStore } from './store';
+import { useAppStore } from './kv-store';
 import { addDays } from 'date-fns';
 
 export const createDemoData = () => {
