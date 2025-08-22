@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { kvAdapter } from './vercel-kv-adapter';
+import { supabaseAdapter } from './supabase-adapter';
 import type { 
   User, 
   Client, 
@@ -115,8 +114,7 @@ interface AppState {
 const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export const useAppStore = create<AppState>()(
-  persist(
-    (set, get) => ({
+  (set, get) => ({
       // Initial state
       isAuthenticated: false,
       user: null,
@@ -146,7 +144,7 @@ export const useAppStore = create<AppState>()(
       login: async (username, password) => {
         get().setLoading(true);
         try {
-          const user = await kvAdapter.getUser(username);
+          const user = await supabaseAdapter.getUser(username);
           
           if (user && user.password === password) {
             set({ user, isAuthenticated: true });
@@ -157,7 +155,7 @@ export const useAppStore = create<AppState>()(
           // Default admin fallback
           if ((username === 'admin' || username === 'admin@calaf.co') && password === 'admin123') {
             try {
-              const adminUser = await kvAdapter.createUser({
+              const adminUser = await supabaseAdapter.createUser({
                 username: 'admin',
                 email: 'admin@calaf.co',
                 password: 'admin123',
@@ -170,7 +168,7 @@ export const useAppStore = create<AppState>()(
               return true;
             } catch (error) {
               // User already exists, try to get it
-              const existingUser = await kvAdapter.getUser('admin');
+              const existingUser = await supabaseAdapter.getUser('admin');
               if (existingUser) {
                 set({ user: existingUser, isAuthenticated: true });
                 await get().loadUserData();
@@ -193,7 +191,7 @@ export const useAppStore = create<AppState>()(
       register: async (userData) => {
         get().setLoading(true);
         try {
-          const newUser = await kvAdapter.createUser(userData);
+          const newUser = await supabaseAdapter.createUser(userData);
           set({ user: newUser, isAuthenticated: true });
           await get().loadUserData();
           return true;
@@ -225,7 +223,7 @@ export const useAppStore = create<AppState>()(
             return false;
           }
 
-          const updatedUser = await kvAdapter.updateUser(currentUser.id, { password: newPassword });
+          const updatedUser = await supabaseAdapter.updateUser(currentUser.id, { password: newPassword });
           if (updatedUser) {
             set({ user: updatedUser });
             get().setError(null);
@@ -260,9 +258,9 @@ export const useAppStore = create<AppState>()(
           get().setLoading(true);
           
           const [userData, currencies, companySettings] = await Promise.all([
-            kvAdapter.getUserData(user.id),
-            kvAdapter.getCurrencies(),
-            kvAdapter.getCompanySettings(),
+            supabaseAdapter.getUserData(user.id),
+            supabaseAdapter.getCurrencies(),
+            supabaseAdapter.getCompanySettings(),
           ]);
           
           set({
@@ -291,7 +289,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const client = await kvAdapter.createClient(user.id, clientData);
+          const client = await supabaseAdapter.createClient(user.id, clientData);
           set((state) => ({ clients: [...state.clients, client] }));
         } catch (err) {
           console.error('Add client error:', err);
@@ -304,7 +302,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const updatedClient = await kvAdapter.updateClient(user.id, id, updates);
+          const updatedClient = await supabaseAdapter.updateClient(user.id, id, updates);
           if (updatedClient) {
             set((state) => ({
               clients: state.clients.map((client) =>
@@ -323,7 +321,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const success = await kvAdapter.deleteClient(user.id, id);
+          const success = await supabaseAdapter.deleteClient(user.id, id);
           if (success) {
             set((state) => ({
               clients: state.clients.filter((client) => client.id !== id),
@@ -341,7 +339,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const employee = await kvAdapter.createEmployee(user.id, employeeData);
+          const employee = await supabaseAdapter.createEmployee(user.id, employeeData);
           set((state) => ({ employees: [...state.employees, employee] }));
         } catch (err) {
           console.error('Add employee error:', err);
@@ -354,7 +352,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const updatedEmployee = await kvAdapter.updateEmployee(user.id, id, updates);
+          const updatedEmployee = await supabaseAdapter.updateEmployee(user.id, id, updates);
           if (updatedEmployee) {
             set((state) => ({
               employees: state.employees.map((employee) =>
@@ -373,7 +371,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const success = await kvAdapter.deleteEmployee(user.id, id);
+          const success = await supabaseAdapter.deleteEmployee(user.id, id);
           if (success) {
             set((state) => ({
               employees: state.employees.filter((employee) => employee.id !== id),
@@ -391,7 +389,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const transaction = await kvAdapter.createTransaction(user.id, transactionData);
+          const transaction = await supabaseAdapter.createTransaction(user.id, transactionData);
           set((state) => ({ transactions: [...state.transactions, transaction] }));
         } catch (err) {
           console.error('Add transaction error:', err);
@@ -404,7 +402,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const updatedTransaction = await kvAdapter.updateTransaction(user.id, id, updates);
+          const updatedTransaction = await supabaseAdapter.updateTransaction(user.id, id, updates);
           if (updatedTransaction) {
             set((state) => ({
               transactions: state.transactions.map((transaction) =>
@@ -423,7 +421,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const success = await kvAdapter.deleteTransaction(user.id, id);
+          const success = await supabaseAdapter.deleteTransaction(user.id, id);
           if (success) {
             set((state) => ({
               transactions: state.transactions.filter((transaction) => transaction.id !== id),
@@ -441,7 +439,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const category = await kvAdapter.createCategory(user.id, categoryData);
+          const category = await supabaseAdapter.createCategory(user.id, categoryData);
           set((state) => ({ categories: [...state.categories, category] }));
         } catch (err) {
           console.error('Add category error:', err);
@@ -454,7 +452,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const updatedCategory = await kvAdapter.updateCategory(user.id, id, updates);
+          const updatedCategory = await supabaseAdapter.updateCategory(user.id, id, updates);
           if (updatedCategory) {
             set((state) => ({
               categories: state.categories.map((category) =>
@@ -473,7 +471,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const success = await kvAdapter.deleteCategory(user.id, id);
+          const success = await supabaseAdapter.deleteCategory(user.id, id);
           if (success) {
             set((state) => ({
               categories: state.categories.filter((category) => category.id !== id),
@@ -641,7 +639,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const invoice = await kvAdapter.createInvoice(user.id, invoiceData);
+          const invoice = await supabaseAdapter.createInvoice(user.id, invoiceData);
           set((state) => ({ invoices: [...state.invoices, invoice] }));
         } catch (err) {
           console.error('Add invoice error:', err);
@@ -654,7 +652,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const updatedInvoice = await kvAdapter.updateInvoice(user.id, id, updates);
+          const updatedInvoice = await supabaseAdapter.updateInvoice(user.id, id, updates);
           if (updatedInvoice) {
             set((state) => ({
               invoices: state.invoices.map((invoice) =>
@@ -673,7 +671,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const success = await kvAdapter.deleteInvoice(user.id, id);
+          const success = await supabaseAdapter.deleteInvoice(user.id, id);
           if (success) {
             set((state) => ({
               invoices: state.invoices.filter((invoice) => invoice.id !== id),
@@ -688,7 +686,7 @@ export const useAppStore = create<AppState>()(
       // Company settings
       updateCompanySettings: async (data) => {
         try {
-          const updated = await kvAdapter.updateCompanySettings(data);
+          const updated = await supabaseAdapter.updateCompanySettings(user.id, data);
           set({ companySettings: updated });
         } catch (err) {
           console.error('Update company settings error:', err);
@@ -732,5 +730,4 @@ export const useAppStore = create<AppState>()(
         }
       },
     })
-  )
-);
+  );
