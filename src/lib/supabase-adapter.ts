@@ -71,17 +71,21 @@ export class SupabaseAdapter {
         throw new Error('Kullanıcı oluşturulamadı');
       }
 
-    return {
-      id: data.id,
-      email: data.email,
-      password: data.password,
-      name: data.name,
-      username: data.username,
-      role: data.role,
-      companyName: data.company_name,
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at),
-    };
+      return {
+        id: data.id,
+        email: data.email,
+        password: data.password,
+        name: data.name,
+        username: data.username,
+        role: data.role,
+        companyName: data.company_name,
+        createdAt: new Date(data.created_at),
+        updatedAt: new Date(data.updated_at),
+      };
+    } catch (error) {
+      console.error('createUser catch error:', error);
+      throw error;
+    }
   }
 
   async updateUser(id: string, updates: Partial<User>): Promise<User | null> {
@@ -854,6 +858,425 @@ export class SupabaseAdapter {
       createdAt: new Date(item.created_at),
       updatedAt: new Date(item.updated_at),
     }));
+  }
+
+  // Quote Operations
+  async createQuote(userId: string, quoteData: Omit<Quote, 'id' | 'createdAt' | 'updatedAt'>): Promise<Quote> {
+    const { data, error } = await supabase
+      .from('quotes')
+      .insert({
+        title: quoteData.title,
+        quote_number: quoteData.quoteNumber,
+        client_id: quoteData.clientId,
+        currency_id: quoteData.currencyId,
+        subtotal: quoteData.subtotal,
+        total_amount: quoteData.totalAmount,
+        vat_rate: quoteData.vatRate,
+        vat_amount: quoteData.vatAmount,
+        total_with_vat: quoteData.totalWithVat,
+        status: quoteData.status,
+        valid_until: quoteData.validUntil.toISOString(),
+        notes: quoteData.notes,
+        terms_conditions: quoteData.termsConditions,
+        user_id: userId,
+      })
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    return {
+      id: data.id,
+      title: data.title,
+      quoteNumber: data.quote_number,
+      clientId: data.client_id,
+      currencyId: data.currency_id,
+      subtotal: data.subtotal,
+      totalAmount: data.total_amount,
+      vatRate: data.vat_rate,
+      vatAmount: data.vat_amount,
+      totalWithVat: data.total_with_vat,
+      status: data.status,
+      validUntil: new Date(data.valid_until),
+      notes: data.notes,
+      termsConditions: data.terms_conditions,
+      userId: data.user_id,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+    };
+  }
+
+  async updateQuote(userId: string, id: string, updates: Partial<Quote>): Promise<Quote | null> {
+    const updateData: any = {};
+    if (updates.title) updateData.title = updates.title;
+    if (updates.quoteNumber) updateData.quote_number = updates.quoteNumber;
+    if (updates.clientId) updateData.client_id = updates.clientId;
+    if (updates.currencyId) updateData.currency_id = updates.currencyId;
+    if (updates.subtotal) updateData.subtotal = updates.subtotal;
+    if (updates.totalAmount) updateData.total_amount = updates.totalAmount;
+    if (updates.vatRate) updateData.vat_rate = updates.vatRate;
+    if (updates.vatAmount) updateData.vat_amount = updates.vatAmount;
+    if (updates.totalWithVat) updateData.total_with_vat = updates.totalWithVat;
+    if (updates.status) updateData.status = updates.status;
+    if (updates.validUntil) updateData.valid_until = updates.validUntil.toISOString();
+    if (updates.notes) updateData.notes = updates.notes;
+    if (updates.termsConditions) updateData.terms_conditions = updates.termsConditions;
+    updateData.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('quotes')
+      .update(updateData)
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error || !data) return null;
+
+    return {
+      id: data.id,
+      title: data.title,
+      quoteNumber: data.quote_number,
+      clientId: data.client_id,
+      currencyId: data.currency_id,
+      subtotal: data.subtotal,
+      totalAmount: data.total_amount,
+      vatRate: data.vat_rate,
+      vatAmount: data.vat_amount,
+      totalWithVat: data.total_with_vat,
+      status: data.status,
+      validUntil: new Date(data.valid_until),
+      notes: data.notes,
+      termsConditions: data.terms_conditions,
+      userId: data.user_id,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+    };
+  }
+
+  async deleteQuote(userId: string, id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('quotes')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    return !error;
+  }
+
+  // Debt Operations
+  async createDebt(userId: string, debtData: Omit<Debt, 'id' | 'createdAt' | 'updatedAt'>): Promise<Debt> {
+    const { data, error } = await supabase
+      .from('debts')
+      .insert({
+        title: debtData.title,
+        client_id: debtData.clientId,
+        currency_id: debtData.currencyId,
+        amount: debtData.amount,
+        type: debtData.type,
+        due_date: debtData.dueDate.toISOString(),
+        description: debtData.description,
+        status: debtData.status,
+        payment_date: debtData.paymentDate?.toISOString(),
+        notes: debtData.notes,
+        user_id: userId,
+      })
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    return {
+      id: data.id,
+      title: data.title,
+      clientId: data.client_id,
+      currencyId: data.currency_id,
+      amount: data.amount,
+      type: data.type,
+      dueDate: new Date(data.due_date),
+      description: data.description,
+      status: data.status,
+      paymentDate: data.payment_date ? new Date(data.payment_date) : undefined,
+      notes: data.notes,
+      userId: data.user_id,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+    };
+  }
+
+  async updateDebt(userId: string, id: string, updates: Partial<Debt>): Promise<Debt | null> {
+    const updateData: any = {};
+    if (updates.title) updateData.title = updates.title;
+    if (updates.clientId) updateData.client_id = updates.clientId;
+    if (updates.currencyId) updateData.currency_id = updates.currencyId;
+    if (updates.amount) updateData.amount = updates.amount;
+    if (updates.type) updateData.type = updates.type;
+    if (updates.dueDate) updateData.due_date = updates.dueDate.toISOString();
+    if (updates.description) updateData.description = updates.description;
+    if (updates.status) updateData.status = updates.status;
+    if (updates.paymentDate) updateData.payment_date = updates.paymentDate.toISOString();
+    if (updates.notes) updateData.notes = updates.notes;
+    updateData.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('debts')
+      .update(updateData)
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error || !data) return null;
+
+    return {
+      id: data.id,
+      title: data.title,
+      clientId: data.client_id,
+      currencyId: data.currency_id,
+      amount: data.amount,
+      type: data.type,
+      dueDate: new Date(data.due_date),
+      description: data.description,
+      status: data.status,
+      paymentDate: data.payment_date ? new Date(data.payment_date) : undefined,
+      notes: data.notes,
+      userId: data.user_id,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+    };
+  }
+
+  async deleteDebt(userId: string, id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('debts')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    return !error;
+  }
+
+  // Cash Account Operations
+  async createCashAccount(userId: string, accountData: Omit<CashAccount, 'id' | 'createdAt' | 'updatedAt'>): Promise<CashAccount> {
+    const { data, error } = await supabase
+      .from('cash_accounts')
+      .insert({
+        name: accountData.name,
+        currency_id: accountData.currencyId,
+        initial_balance: accountData.initialBalance,
+        balance: accountData.balance,
+        current_balance: accountData.currentBalance,
+        is_active: accountData.isActive,
+        is_default: accountData.isDefault,
+        user_id: userId,
+      })
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    return {
+      id: data.id,
+      name: data.name,
+      currencyId: data.currency_id,
+      initialBalance: data.initial_balance,
+      balance: data.balance,
+      currentBalance: data.current_balance,
+      isActive: data.is_active,
+      isDefault: data.is_default,
+      userId: data.user_id,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+    };
+  }
+
+  async updateCashAccount(userId: string, id: string, updates: Partial<CashAccount>): Promise<CashAccount | null> {
+    const updateData: any = {};
+    if (updates.name) updateData.name = updates.name;
+    if (updates.currencyId) updateData.currency_id = updates.currencyId;
+    if (updates.initialBalance) updateData.initial_balance = updates.initialBalance;
+    if (updates.balance) updateData.balance = updates.balance;
+    if (updates.currentBalance) updateData.current_balance = updates.currentBalance;
+    if (updates.isActive !== undefined) updateData.is_active = updates.isActive;
+    if (updates.isDefault !== undefined) updateData.is_default = updates.isDefault;
+    updateData.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('cash_accounts')
+      .update(updateData)
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error || !data) return null;
+
+    return {
+      id: data.id,
+      name: data.name,
+      currencyId: data.currency_id,
+      initialBalance: data.initial_balance,
+      balance: data.balance,
+      currentBalance: data.current_balance,
+      isActive: data.is_active,
+      isDefault: data.is_default,
+      userId: data.user_id,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+    };
+  }
+
+  async deleteCashAccount(userId: string, id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('cash_accounts')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    return !error;
+  }
+
+  // Invoice Operations
+  async createInvoice(userId: string, invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'updatedAt'>): Promise<Invoice> {
+    const { data, error } = await supabase
+      .from('invoices')
+      .insert({
+        description: invoiceData.description,
+        invoice_number: invoiceData.invoiceNumber,
+        client_id: invoiceData.clientId,
+        currency_id: invoiceData.currencyId,
+        subtotal: invoiceData.subtotal,
+        total_amount: invoiceData.totalAmount,
+        vat_rate: invoiceData.vatRate,
+        vat_amount: invoiceData.vatAmount,
+        total_with_vat: invoiceData.totalWithVat,
+        tevkifat_applied: invoiceData.tevkifatApplied,
+        tevkifat_rate: invoiceData.tevkifatRate,
+        tevkifat_amount: invoiceData.tevkifatAmount,
+        status: invoiceData.status,
+        issue_date: invoiceData.issueDate.toISOString(),
+        due_date: invoiceData.dueDate.toISOString(),
+        payment_date: invoiceData.paymentDate?.toISOString(),
+        notes: invoiceData.notes,
+        terms_conditions: invoiceData.termsConditions,
+        is_recurring: invoiceData.isRecurring,
+        recurring_period: invoiceData.recurringPeriod,
+        next_invoice_date: invoiceData.nextInvoiceDate?.toISOString(),
+        parent_invoice_id: invoiceData.parentInvoiceId,
+        user_id: userId,
+      })
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    return {
+      id: data.id,
+      description: data.description,
+      invoiceNumber: data.invoice_number,
+      clientId: data.client_id,
+      currencyId: data.currency_id,
+      subtotal: data.subtotal,
+      totalAmount: data.total_amount,
+      vatRate: data.vat_rate,
+      vatAmount: data.vat_amount,
+      totalWithVat: data.total_with_vat,
+      tevkifatApplied: data.tevkifat_applied,
+      tevkifatRate: data.tevkifat_rate,
+      tevkifatAmount: data.tevkifat_amount,
+      status: data.status,
+      issueDate: new Date(data.issue_date),
+      dueDate: new Date(data.due_date),
+      paymentDate: data.payment_date ? new Date(data.payment_date) : undefined,
+      notes: data.notes,
+      termsConditions: data.terms_conditions,
+      isRecurring: data.is_recurring,
+      recurringPeriod: data.recurring_period,
+      nextInvoiceDate: data.next_invoice_date ? new Date(data.next_invoice_date) : undefined,
+      parentInvoiceId: data.parent_invoice_id,
+      items: data.items || [],
+      userId: data.user_id,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+    };
+  }
+
+  async updateInvoice(userId: string, id: string, updates: Partial<Invoice>): Promise<Invoice | null> {
+    const updateData: any = {};
+    if (updates.description) updateData.description = updates.description;
+    if (updates.invoiceNumber) updateData.invoice_number = updates.invoiceNumber;
+    if (updates.clientId) updateData.client_id = updates.clientId;
+    if (updates.currencyId) updateData.currency_id = updates.currencyId;
+    if (updates.subtotal) updateData.subtotal = updates.subtotal;
+    if (updates.totalAmount) updateData.total_amount = updates.totalAmount;
+    if (updates.vatRate) updateData.vat_rate = updates.vatRate;
+    if (updates.vatAmount) updateData.vat_amount = updates.vatAmount;
+    if (updates.totalWithVat) updateData.total_with_vat = updates.totalWithVat;
+    if (updates.tevkifatApplied !== undefined) updateData.tevkifat_applied = updates.tevkifatApplied;
+    if (updates.tevkifatRate) updateData.tevkifat_rate = updates.tevkifatRate;
+    if (updates.tevkifatAmount) updateData.tevkifat_amount = updates.tevkifatAmount;
+    if (updates.status) updateData.status = updates.status;
+    if (updates.issueDate) updateData.issue_date = updates.issueDate.toISOString();
+    if (updates.dueDate) updateData.due_date = updates.dueDate.toISOString();
+    if (updates.paymentDate) updateData.payment_date = updates.paymentDate.toISOString();
+    if (updates.notes) updateData.notes = updates.notes;
+    if (updates.termsConditions) updateData.terms_conditions = updates.termsConditions;
+    if (updates.isRecurring !== undefined) updateData.is_recurring = updates.isRecurring;
+    if (updates.recurringPeriod) updateData.recurring_period = updates.recurringPeriod;
+    if (updates.nextInvoiceDate) updateData.next_invoice_date = updates.nextInvoiceDate.toISOString();
+    if (updates.parentInvoiceId) updateData.parent_invoice_id = updates.parentInvoiceId;
+    if (updates.items) updateData.items = updates.items;
+    updateData.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('invoices')
+      .update(updateData)
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error || !data) return null;
+
+    return {
+      id: data.id,
+      description: data.description,
+      invoiceNumber: data.invoice_number,
+      clientId: data.client_id,
+      currencyId: data.currency_id,
+      subtotal: data.subtotal,
+      totalAmount: data.total_amount,
+      vatRate: data.vat_rate,
+      vatAmount: data.vat_amount,
+      totalWithVat: data.total_with_vat,
+      tevkifatApplied: data.tevkifat_applied,
+      tevkifatRate: data.tevkifat_rate,
+      tevkifatAmount: data.tevkifat_amount,
+      status: data.status,
+      issueDate: new Date(data.issue_date),
+      dueDate: new Date(data.due_date),
+      paymentDate: data.payment_date ? new Date(data.payment_date) : undefined,
+      notes: data.notes,
+      termsConditions: data.terms_conditions,
+      isRecurring: data.is_recurring,
+      recurringPeriod: data.recurring_period,
+      nextInvoiceDate: data.next_invoice_date ? new Date(data.next_invoice_date) : undefined,
+      parentInvoiceId: data.parent_invoice_id,
+      items: data.items || [],
+      userId: data.user_id,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+    };
+  }
+
+  async deleteInvoice(userId: string, id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('invoices')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    return !error;
   }
 }
 

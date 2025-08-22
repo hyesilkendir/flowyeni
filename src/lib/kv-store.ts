@@ -260,7 +260,7 @@ export const useAppStore = create<AppState>()(
           const [userData, currencies, companySettings] = await Promise.all([
             supabaseAdapter.getUserData(user.id),
             supabaseAdapter.getCurrencies(),
-            supabaseAdapter.getCompanySettings(),
+            supabaseAdapter.getCompanySettings(user.id),
           ]);
           
           set({
@@ -489,7 +489,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const quote = await kvAdapter.createQuote(user.id, quoteData);
+          const quote = await supabaseAdapter.createQuote(user.id, quoteData);
           set((state) => ({ quotes: [...state.quotes, quote] }));
         } catch (err) {
           console.error('Add quote error:', err);
@@ -502,7 +502,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const updatedQuote = await kvAdapter.updateQuote(user.id, id, updates);
+          const updatedQuote = await supabaseAdapter.updateQuote(user.id, id, updates);
           if (updatedQuote) {
             set((state) => ({
               quotes: state.quotes.map((quote) =>
@@ -521,7 +521,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const success = await kvAdapter.deleteQuote(user.id, id);
+          const success = await supabaseAdapter.deleteQuote(user.id, id);
           if (success) {
             set((state) => ({
               quotes: state.quotes.filter((quote) => quote.id !== id),
@@ -539,7 +539,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const debt = await kvAdapter.createDebt(user.id, debtData);
+          const debt = await supabaseAdapter.createDebt(user.id, debtData);
           set((state) => ({ debts: [...state.debts, debt] }));
         } catch (err) {
           console.error('Add debt error:', err);
@@ -552,7 +552,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const updatedDebt = await kvAdapter.updateDebt(user.id, id, updates);
+          const updatedDebt = await supabaseAdapter.updateDebt(user.id, id, updates);
           if (updatedDebt) {
             set((state) => ({
               debts: state.debts.map((debt) =>
@@ -571,7 +571,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const success = await kvAdapter.deleteDebt(user.id, id);
+          const success = await supabaseAdapter.deleteDebt(user.id, id);
           if (success) {
             set((state) => ({
               debts: state.debts.filter((debt) => debt.id !== id),
@@ -589,7 +589,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const account = await kvAdapter.createCashAccount(user.id, accountData);
+          const account = await supabaseAdapter.createCashAccount(user.id, accountData);
           set((state) => ({ cashAccounts: [...state.cashAccounts, account] }));
         } catch (err) {
           console.error('Add cash account error:', err);
@@ -602,7 +602,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const updatedAccount = await kvAdapter.updateCashAccount(user.id, id, updates);
+          const updatedAccount = await supabaseAdapter.updateCashAccount(user.id, id, updates);
           if (updatedAccount) {
             set((state) => ({
               cashAccounts: state.cashAccounts.map((account) =>
@@ -621,7 +621,7 @@ export const useAppStore = create<AppState>()(
         if (!user) return;
         
         try {
-          const success = await kvAdapter.deleteCashAccount(user.id, id);
+          const success = await supabaseAdapter.deleteCashAccount(user.id, id);
           if (success) {
             set((state) => ({
               cashAccounts: state.cashAccounts.filter((account) => account.id !== id),
@@ -686,7 +686,7 @@ export const useAppStore = create<AppState>()(
       // Company settings
       updateCompanySettings: async (data) => {
         try {
-          const updated = await supabaseAdapter.updateCompanySettings(user.id, data);
+          const updated = await supabaseAdapter.updateCompanySettings(user?.id || '', data);
           set({ companySettings: updated });
         } catch (err) {
           console.error('Update company settings error:', err);
