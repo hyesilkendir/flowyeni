@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAppStore } from '@/lib/kv-store';
+import { useAppStore } from '../lib/kv-store';
 
 export function useStoreHydration() {
   const [isHydrated, setIsHydrated] = useState(false);

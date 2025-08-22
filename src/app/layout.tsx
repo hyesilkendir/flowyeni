@@ -2,7 +2,7 @@ import React from 'react';
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { HydrationGuard } from '@/components/hydration-guard'
+import { HydrationGuard } from '../components/hydration-guard'
 
 const inter = Inter({ subsets: ['latin'] })
 

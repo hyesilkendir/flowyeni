@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Label } from '../../components/ui/label';
 import { useAppStore } from '../../lib/kv-store';
 import { AuthLayout } from '../../components/layout/auth-layout';
-import type { Client } from '@/lib/database-schema';
+import type { Client } from '../../lib/database-schema';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 

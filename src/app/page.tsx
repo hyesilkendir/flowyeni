@@ -2,9 +2,9 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAppStore } from '@/lib/kv-store';
-import { HydrationGuard } from '@/components/hydration-guard';
-import { useStoreHydration } from '@/hooks/use-store-hydration';
+import { useAppStore } from '../lib/kv-store';
+import { HydrationGuard } from '../components/hydration-guard';
+import { useStoreHydration } from '../hooks/use-store-hydration';
 
 function HomeContent() {
   const { isAuthenticated } = useAppStore();

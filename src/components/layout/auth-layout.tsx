@@ -3,9 +3,9 @@
 import React from 'react';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAppStore } from '@/lib/kv-store';
-import { HydrationGuard } from '@/components/hydration-guard';
-import { useStoreHydration } from '@/hooks/use-store-hydration';
+import { useAppStore } from '../../lib/kv-store';
+import { HydrationGuard } from '../hydration-guard';
+import { useStoreHydration } from '../../hooks/use-store-hydration';
 import { Sidebar } from './sidebar';
 import { Header } from './header';
 
